@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Egyptian Rat Screw</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:radial-gradient(ellipse at center,#1e5631,#1a472a 50%,#0f2e1a);color:#fff;min-height:100vh;overflow-x:hidden;user-select:none}
+
+/* ===== SETUP ===== */
+#setup{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;animation:fadeIn .5s ease;overflow-y:auto}
+#setup h1{font-size:2.8em;color:#fff;text-shadow:2px 2px 4px rgba(0,0,0,.5);letter-spacing:2px;margin-bottom:4px}
+.subtitle{color:rgba(255,255,255,.6);font-style:italic;margin-bottom:20px;font-size:1.1em}
+
+.deck-preview{position:relative;width:100px;height:140px;margin:10px auto}
+.deck-preview .cb{position:absolute;width:100px;height:140px;background:linear-gradient(135deg,#1e3a5f,#2a5298,#1e3a5f);border:2px solid #fff;border-radius:8px;box-shadow:2px 2px 10px rgba(0,0,0,.5)}
+.deck-preview .cb:nth-child(1){top:0;left:0}
+.deck-preview .cb:nth-child(2){top:2px;left:1px}
+.deck-preview .cb:nth-child(3){top:4px;left:2px}
+.deck-preview .cb:nth-child(4){top:6px;left:3px}
+.deck-preview .cb::after{content:'';position:absolute;top:5px;left:5px;right:5px;bottom:5px;border:1px solid rgba(255,255,255,.25);border-radius:4px;background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(255,255,255,.04) 4px,rgba(255,255,255,.04) 8px)}
+
+.shuffle-info{text-align:center;margin:8px 0;color:rgba(255,255,255,.5);font-size:.95em}
+
+.btn{padding:12px 30px;font-size:1.1em;font-family:inherit;border:2px solid rgba(255,255,255,.6);border-radius:8px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:1px;color:#fff}
+.btn-gold{background:rgba(255,255,255,.15);font-weight:600;border-color:#fff}
+.btn-gold:hover{background:rgba(255,255,255,.25);transform:translateY(-2px);box-shadow:0 4px 15px rgba(255,255,255,.15)}
+.btn-outline{background:transparent;color:rgba(255,255,255,.7)}
+.btn-outline:hover{background:rgba(255,255,255,.08)}
+
+.rules-section{margin:18px 0;width:100%;max-width:520px}
+.rules-section h2{color:#fff;font-size:1.2em;margin-bottom:10px;text-align:center}
+.rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rule-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(0,0,0,.2);border-radius:6px;cursor:pointer;transition:background .2s}
+.rule-item:hover{background:rgba(0,0,0,.3)}
+.rule-item label{cursor:pointer;flex:1}
+.rule-name{font-weight:600;font-size:.95em}
+.rule-desc{font-size:.72em;color:rgba(255,255,255,.5);display:block;margin-top:1px}
+
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#444;border-radius:24px;transition:.3s}
+.toggle .slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s}
+.toggle input:checked+.slider{background:#4caf50}
+.toggle input:checked+.slider::before{transform:translateX(20px)}
+
+.how-to-play{max-width:520px;margin:10px 0;text-align:left}
+.how-to-play summary{color:rgba(255,255,255,.8);cursor:pointer;font-size:.95em;text-align:center}
+.how-to-play p{font-size:.82em;color:rgba(255,255,255,.65);line-height:1.5;margin-top:8px;padding:0 10px}
+
+/* ===== GAME ===== */
+#game{display:none;flex-direction:column;height:100vh;padding:8px 10px}
+
+.active-rules{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;padding:4px 0}
+.rule-badge{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);padding:2px 8px;border-radius:12px;font-size:.68em;text-transform:uppercase;letter-spacing:.5px}
+
+.player-zone{display:flex;align-items:center;justify-content:center;gap:15px;padding:8px 0}
+.player-label{font-size:1.15em;font-weight:bold;color:#fff;min-width:70px}
+.card-count{font-size:2em;font-weight:bold;min-width:55px;text-align:center}
+
+.hand-card{width:55px;height:77px;background:linear-gradient(135deg,#1e3a5f,#2a5298,#1e3a5f);border:2px solid #fff;border-radius:6px;position:relative;box-shadow:2px 2px 8px rgba(0,0,0,.4)}
+.hand-card::after{content:'';position:absolute;top:4px;left:4px;right:4px;bottom:4px;border:1px solid rgba(255,255,255,.2);border-radius:3px;background:repeating-linear-gradient(45deg,transparent,transparent 3px,rgba(255,255,255,.03) 3px,rgba(255,255,255,.03) 6px)}
+.hand-card.empty{background:rgba(255,255,255,.08);border:2px dashed rgba(255,255,255,.2);box-shadow:none}
+.hand-card.empty::after{display:none}
+
+/* Draggable player card */
+#player-hand{cursor:grab;touch-action:none;transition:box-shadow .15s}
+#player-hand:not(.empty):hover{box-shadow:0 0 14px rgba(100,180,255,.5)}
+#player-hand.dragging{cursor:grabbing;box-shadow:0 0 20px rgba(100,180,255,.7);z-index:50}
+#player-hand.disabled{cursor:default;opacity:.45}
+#player-hand.disabled:hover{box-shadow:2px 2px 8px rgba(0,0,0,.4)}
+
+/* Pile zone — click to slap */
+.pile-zone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;min-height:0;cursor:pointer;border-radius:16px;transition:background .15s,box-shadow .15s}
+.pile-zone:hover{background:rgba(255,255,255,.03)}
+.pile-zone.drop-ready{background:rgba(76,175,80,.12);box-shadow:inset 0 0 30px rgba(76,175,80,.2)}
+.pile-zone.slap-hint{box-shadow:inset 0 0 25px rgba(239,83,80,.15)}
+
+.pile-cards{position:relative;width:110px;height:154px;margin:6px}
+.pile-count{color:rgba(255,255,255,.4);font-size:.85em}
+
+.card{width:110px;height:154px;background:#fff;border-radius:8px;position:absolute;display:flex;flex-direction:column;justify-content:space-between;padding:6px;box-shadow:2px 2px 10px rgba(0,0,0,.4);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
+.card.red{color:#c41e3a}
+.card.black{color:#1a1a2e}
+.card .corner{display:flex;flex-direction:column;align-items:center;line-height:1}
+.card .rank{font-size:1.3em;font-weight:bold}
+.card .suit-small{font-size:.95em}
+.card .corner-bottom{align-self:flex-end;transform:rotate(180deg)}
+.card .center-suit{font-size:2.8em;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:.85}
+
+.status-zone{text-align:center;padding:4px 0}
+#status{font-size:1.15em;font-weight:bold;min-height:1.4em}
+#challenge-info{font-size:.85em;color:rgba(255,255,255,.8);min-height:1.2em;padding:2px 10px;border-radius:4px;display:inline-block}
+#challenge-info:not(:empty){background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15)}
+
+.key-hint{text-align:center;font-size:.72em;color:rgba(255,255,255,.35);padding:4px 0}
+
+.log-zone{max-height:70px;overflow-y:auto;padding:4px 10px;font-size:.78em;color:rgba(255,255,255,.4)}
+.log-entry{padding:1px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+
+.slap-overlay{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:2.8em;font-weight:bold;padding:12px 28px;border-radius:14px;z-index:100;pointer-events:none;animation:slapPop .7s ease forwards;white-space:nowrap}
+.slap-overlay.player-slap{background:rgba(46,125,50,.92);color:#fff;border:3px solid #66bb6a}
+.slap-overlay.computer-slap{background:rgba(198,40,40,.92);color:#fff;border:3px solid #ef5350}
+.slap-overlay.false-slap{background:rgba(230,126,34,.92);color:#fff;border:3px solid #f39c12;font-size:1.4em}
+.slap-overlay.pile-won{background:rgba(255,255,255,.88);color:#1a1a2e;border:3px solid #fff;font-size:1.2em}
+
+#gameover{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.88);z-index:200;flex-direction:column;align-items:center;justify-content:center}
+#gameover h2{font-size:3em;color:#fff;margin-bottom:10px}
+#gameover p{font-size:1.2em;margin-bottom:30px}
+
+.bottom-bar{display:flex;align-items:center;justify-content:center;gap:16px;padding:4px 0}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shuffleAnim{0%{transform:translateX(0) rotate(0)}25%{transform:translateX(-12px) rotate(-4deg)}50%{transform:translateX(12px) rotate(4deg)}75%{transform:translateX(-8px) rotate(-2deg)}100%{transform:translateX(0) rotate(0)}}
+.shuffling .cb{animation:shuffleAnim .35s ease}
+@keyframes slapPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}55%{transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.85)}}
+@keyframes cardDeal{from{opacity:0;transform:translateY(-40px) rotate(-8deg) scale(.9)}to{opacity:1;transform:translateY(0) rotate(0) scale(1)}}
+.card-deal{animation:cardDeal .25s ease}
+@keyframes pulse{0%,100%{box-shadow:inset 0 0 10px rgba(239,83,80,.15)}50%{box-shadow:inset 0 0 30px rgba(239,83,80,.3)}}
+.slap-pulse{animation:pulse .6s ease infinite}
+
+@media(max-height:680px){
+  .card{width:90px;height:126px;padding:4px}
+  .pile-cards{width:90px;height:126px}
+  .card .center-suit{font-size:2.2em}
+  .card .rank{font-size:1.1em}
+  .btn{padding:10px 22px;font-size:1em}
+  .player-zone{padding:4px 0}
+  .card-count{font-size:1.6em}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== SETUP SCREEN ===== -->
+<div id="setup">
+  <h1>Egyptian Rat Screw</h1>
+  <p class="subtitle">A game of speed and slaps</p>
+
+  <div class="deck-preview" id="deck-preview">
+    <div class="cb"></div><div class="cb"></div><div class="cb"></div><div class="cb"></div>
+  </div>
+
+  <div class="shuffle-info" id="shuffle-count">Shuffled 1 time</div>
+  <div style="display:flex;gap:12px;margin:8px 0">
+    <button class="btn btn-outline" id="shuffle-btn">Shuffle Again</button>
+  </div>
+
+  <details class="how-to-play">
+    <summary>How to play</summary>
+    <p>
+      Take turns playing cards face-up onto the pile. When a <b>face card or ace</b> is played,
+      the next player must respond with another face card or ace within a limited number of chances
+      (J&thinsp;=&thinsp;1, Q&thinsp;=&thinsp;2, K&thinsp;=&thinsp;3, A&thinsp;=&thinsp;4).
+      Fail and the challenger wins the pile.<br><br>
+      <b>Drag</b> your card to the pile to play. <b>Click the pile</b> to slap it!
+      A wrong slap costs you a card.<br><br>
+      <b>Collect all 52 cards to win.</b>
+    </p>
+  </details>
+
+  <div class="rules-section">
+    <h2>Slap Rules</h2>
+    <div class="rule-grid" id="rule-grid"></div>
+    <div class="rule-item" id="hints-toggle" style="margin-top:12px">
+      <div class="toggle">
+        <input type="checkbox" id="r-hints" checked>
+        <span class="slider"></span>
+      </div>
+      <label>
+        <span class="rule-name">Show Slap Hints</span>
+        <span class="rule-desc">Highlight pile and name the pattern when a slap is available</span>
+      </label>
+    </div>
+  </div>
+
+  <button class="btn btn-gold" id="start-btn" style="margin-top:12px;font-size:1.25em">Deal &amp; Play</button>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="game">
+  <div class="active-rules" id="active-rules"></div>
+
+  <div class="player-zone">
+    <span class="player-label">Robot</span>
+    <span class="card-count" id="comp-count">26</span>
+    <div class="hand-card" id="comp-hand"></div>
+  </div>
+
+  <div class="pile-zone" id="pile-zone">
+    <div class="pile-cards" id="pile-cards"></div>
+    <div class="pile-count" id="pile-count">Pile: 0</div>
+  </div>
+
+  <div class="status-zone">
+    <div id="status">Your turn &mdash; drag your card to the pile</div>
+    <div id="challenge-info"></div>
+  </div>
+
+  <div class="player-zone">
+    <div class="hand-card" id="player-hand"></div>
+    <span class="card-count" id="player-count">26</span>
+    <span class="player-label">You</span>
+  </div>
+
+  <div class="key-hint">Drag card to play &middot; Click pile to slap &middot; Space = slap &middot; Enter = play</div>
+
+  <div class="log-zone" id="log"></div>
+  <div class="bottom-bar">
+    <button class="btn btn-outline" id="sound-btn" style="font-size:.75em;padding:5px 14px">Sound: ON</button>
+    <button class="btn btn-outline" id="restart-btn" style="font-size:.75em;padding:5px 14px">New Game</button>
+  </div>
+</div>
+
+<!-- ===== GAME OVER ===== -->
+<div id="gameover">
+  <h2 id="go-title">Game Over</h2>
+  <p id="go-msg"></p>
+  <button class="btn btn-gold" id="go-btn">Play Again</button>
+</div>
+
+<script>
+// ===== CONSTANTS =====
+const SUITS = ['\u2660','\u2665','\u2666','\u2663'];
+const RANKS = ['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+const VAL = {A:1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,J:11,Q:12,K:13};
+const FACE = new Set(['J','Q','K','A']);
+const CHANCES = {J:1,Q:2,K:3,A:4};
+
+const RULES = [
+  {id:'doubles',  name:'Doubles',       desc:'Two same-rank cards in a row'},
+  {id:'sandwich', name:'Sandwich',      desc:'Same rank with one card between'},
+  {id:'topBottom',name:'Top & Bottom',  desc:'Top card matches first card of pile'},
+  {id:'tens',     name:'Tens',          desc:'Top two cards sum to 10 (A=1)'},
+  {id:'marriage', name:'Marriage',      desc:'King and Queen adjacent'},
+  {id:'fourRun',  name:'Four in a Row', desc:'4 cards in sequential order'},
+];
+
+// ===== GAME STATE =====
+const G = {
+  deck:[],playerHand:[],compHand:[],pile:[],
+  turn:'player',challenge:null,
+  slapWindow:false,slapReason:'',slapStart:0,
+  active:false,processing:false,
+  rules:{},compSlapT:null,compPlayT:null,
+  shuffleCount:0,logs:[],showHints:true,soundOn:true
+};
+
+// ===== DRAG STATE =====
+const drag = { active:false, startX:0, startY:0 };
+
+// ===== HELPERS =====
+function makeDeck(){
+  const d=[];
+  for(const s of SUITS) for(const r of RANKS) d.push({s,r,v:VAL[r]});
+  return d;
+}
+function shuffle(a){
+  const b=[...a];
+  for(let i=b.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[b[i],b[j]]=[b[j],b[i]];}
+  return b;
+}
+function isRed(c){return c.s==='\u2665'||c.s==='\u2666';}
+function cname(c){return c.r+c.s;}
+
+// ===== SLAP CHECKING =====
+function checkSlap(){
+  const p=G.pile;
+  if(p.length<2) return false;
+  const t=p[p.length-1], s=p[p.length-2];
+
+  if(G.rules.doubles && t.r===s.r) return 'Doubles';
+  if(G.rules.sandwich && p.length>=3 && t.r===p[p.length-3].r) return 'Sandwich';
+  if(G.rules.marriage){
+    if((t.r==='Q'&&s.r==='K')||(t.r==='K'&&s.r==='Q')) return 'Marriage';
+  }
+  if(G.rules.tens && t.v+s.v===10) return 'Tens';
+  if(G.rules.topBottom && p.length>2 && t.r===p[0].r) return 'Top & Bottom';
+  if(G.rules.fourRun && p.length>=4){
+    const v=[p[p.length-4].v,p[p.length-3].v,p[p.length-2].v,p[p.length-1].v];
+    if((v[0]+1===v[1]&&v[1]+1===v[2]&&v[2]+1===v[3])||(v[0]-1===v[1]&&v[1]-1===v[2]&&v[2]-1===v[3]))
+      return 'Four in a Row';
+  }
+  return false;
+}
+
+// ===== GAME FLOW =====
+function startGame(){
+  for(const r of RULES) G.rules[r.id]=document.getElementById('r-'+r.id).checked;
+  G.showHints=document.getElementById('r-hints').checked;
+  const half=G.deck.length/2;
+  G.playerHand=G.deck.slice(0,half);
+  G.compHand=G.deck.slice(half);
+  G.pile=[];G.turn='player';G.challenge=null;
+  G.slapWindow=false;G.active=true;G.processing=false;G.logs=[];
+  clearTimeout(G.compSlapT);clearTimeout(G.compPlayT);
+
+  $('setup').style.display='none';
+  $('game').style.display='flex';
+  $('gameover').style.display='none';
+  renderRuleBadges();
+  log('Game started! Drag your card to the pile.');
+  render();
+  setTurn('player');
+}
+
+function canPlayerPlay(){
+  return G.turn==='player'&&!G.processing&&!G.slapWindow&&G.active&&G.playerHand.length>0;
+}
+
+function setTurn(who){
+  if(!G.active) return;
+  G.turn=who;
+  const hand=who==='player'?G.playerHand:G.compHand;
+
+  // No cards — handle edge cases
+  if(hand.length===0){
+    if(G.challenge && G.challenge.by!==who){
+      log((G.challenge.by==='player'?'You':'Robot')+' won the challenge (opponent out of cards)!');
+      winPile(G.challenge.by);return;
+    }
+    if(G.pile.length===0){endGame(who==='player'?'comp':'player');return;}
+    setTurn(who==='player'?'comp':'player');return;
+  }
+
+  G.processing=false;
+  updatePlayerCardState();
+
+  if(who==='player'){
+    if(G.challenge && G.challenge.by==='comp'){
+      status(`Respond! ${G.challenge.chancesLeft} chance${G.challenge.chancesLeft>1?'s':''} left`);
+      chalInfo('Robot played a face card \u2014 drag a card to respond!');
+    } else {
+      status('Your turn \u2014 drag your card to the pile');chalInfo('');
+    }
+  } else {
+    if(G.challenge && G.challenge.by==='player'){
+      status(`Robot responding\u2026 ${G.challenge.chancesLeft} chance${G.challenge.chancesLeft>1?'s':''} left`);
+    } else {
+      status("Robot's turn\u2026");
+    }
+    G.compPlayT=setTimeout(()=>{if(G.active&&!G.slapWindow)doPlay('comp');},600+Math.random()*500);
+  }
+}
+
+function updatePlayerCardState(){
+  const el=$('player-hand');
+  if(canPlayerPlay()){
+    el.classList.remove('disabled');
+  } else {
+    el.classList.add('disabled');
+  }
+}
+
+function doPlay(who){
+  if(!G.active||G.slapWindow) return;
+  const hand=who==='player'?G.playerHand:G.compHand;
+  if(hand.length===0) return;
+
+  G.processing=true;
+  updatePlayerCardState();
+
+  const card=hand.shift();
+  G.pile.push(card);
+  playCardSound(G.pile.length);
+  log((who==='player'?'You':'Robot')+' played '+cname(card));
+  render();
+
+  // Check slap first
+  const sr=checkSlap();
+  if(sr){openSlapWindow(sr);return;}
+
+  // Challenge logic
+  if(G.challenge){
+    if(FACE.has(card.r)){
+      const ch=CHANCES[card.r];
+      log(card.r+' played \u2014 challenge transfers! ('+ch+' chance'+(ch>1?'s':'')+')');
+      G.challenge={by:who,chancesLeft:ch};
+      setTurn(who==='player'?'comp':'player');
+    } else {
+      G.challenge.chancesLeft--;
+      if(G.challenge.chancesLeft<=0){
+        const winner=G.challenge.by;
+        log((winner==='player'?'You':'Robot')+' won the challenge!');
+        status((winner==='player'?'You':'Robot')+' won the challenge!');
+        G.processing=true;
+        setTimeout(()=>{G.processing=false;winPile(winner);},900);
+      } else {
+        setTurn(who);
+      }
+    }
+  } else {
+    if(FACE.has(card.r)){
+      const ch=CHANCES[card.r];
+      G.challenge={by:who,chancesLeft:ch};
+      log(card.r+' played \u2014 '+(who==='player'?'Robot':'You')+' must respond ('+ch+' chance'+(ch>1?'s':'')+')');
+      setTurn(who==='player'?'comp':'player');
+    } else {
+      G.challenge=null;
+      setTurn(who==='player'?'comp':'player');
+    }
+  }
+}
+
+function openSlapWindow(reason){
+  G.slapWindow=true;G.slapReason=reason;
+  G.processing=false;
+  G.slapStart=performance.now();
+  if(G.showHints){
+    status(reason+'! Click the pile to SLAP!');
+    $('pile-zone').classList.add('slap-pulse');
+  }
+  updatePlayerCardState();
+
+  const delay=300+Math.random()*1700;
+  G.compSlapT=setTimeout(()=>{
+    if(G.slapWindow&&G.active) doSlap('comp');
+  },delay);
+}
+
+function doSlap(who){
+  if(!G.active||G.processing) return;
+
+  if(who==='player'&&!G.slapWindow){
+    if(G.pile.length===0) return;
+    falseSlapPenalty();return;
+  }
+  if(!G.slapWindow) return;
+
+  G.slapWindow=false;G.processing=true;
+  clearTimeout(G.compSlapT);
+  $('pile-zone').classList.remove('slap-pulse');
+
+  const ms=((performance.now()-G.slapStart)/1000).toFixed(2);
+  playSlapSound(who);
+  log((who==='player'?'You':'Robot')+' slapped! '+G.slapReason+' ('+ms+'s)');
+  showOverlay(who==='player'?'player-slap':'computer-slap','SLAP!');
+
+  setTimeout(()=>{G.processing=false;winPile(who);},750);
+}
+
+function falseSlapPenalty(){
+  if(G.processing) return;
+  G.processing=true;
+  if(G.playerHand.length>0){
+    const c=G.playerHand.shift();
+    G.pile.unshift(c);
+    log('Bad slap! Lost '+cname(c)+' to the pile.');
+  } else {
+    log('Bad slap! No cards to lose though.');
+  }
+  showOverlay('false-slap','Bad slap! \u22121 card');
+  render();
+  setTimeout(()=>{G.processing=false;},500);
+}
+
+function winPile(who){
+  const hand=who==='player'?G.playerHand:G.compHand;
+  const n=G.pile.length;
+  hand.push(...shuffle(G.pile));
+  G.pile=[];G.challenge=null;
+
+  log((who==='player'?'You':'Robot')+' collected '+n+' cards!');
+  showOverlay('pile-won',(who==='player'?'You':'Robot')+' +'+n+' cards');
+  render();
+
+  const opp=who==='player'?G.compHand:G.playerHand;
+  if(opp.length===0&&G.pile.length===0){endGame(who);return;}
+
+  setTimeout(()=>setTurn(who),900);
+}
+
+function endGame(winner){
+  G.active=false;
+  clearTimeout(G.compSlapT);clearTimeout(G.compPlayT);
+  $('pile-zone').classList.remove('slap-pulse');
+  $('gameover').style.display='flex';
+  $('go-title').textContent=winner==='player'?'You Win!':'Robot Wins';
+  $('go-msg').textContent=winner==='player'?'You collected all 52 cards!':'The robot collected all the cards.';
+}
+
+// ===== UI =====
+function $(id){return document.getElementById(id);}
+function status(t){$('status').textContent=t;}
+function chalInfo(t){$('challenge-info').textContent=t;}
+
+function render(){
+  $('player-count').textContent=G.playerHand.length;
+  $('comp-count').textContent=G.compHand.length;
+  $('pile-count').textContent='Pile: '+G.pile.length;
+  $('player-hand').className=G.playerHand.length?'hand-card':'hand-card empty';
+  $('comp-hand').className=G.compHand.length?'hand-card':'hand-card empty';
+  updatePlayerCardState();
+  renderPile();
+}
+
+function renderPile(){
+  const el=$('pile-cards');el.innerHTML='';
+  if(!G.pile.length){
+    el.innerHTML='<div style="width:110px;height:154px;border:2px dashed rgba(255,255,255,.12);border-radius:8px"></div>';
+    return;
+  }
+  const start=Math.max(0,G.pile.length-3);
+  for(let i=start;i<G.pile.length;i++){
+    const c=G.pile[i],off=(i-start)*4,isTop=i===G.pile.length-1;
+    const d=document.createElement('div');
+    d.className='card '+(isRed(c)?'red':'black')+(isTop?' card-deal':'');
+    d.style.top=off+'px';d.style.left=off+'px';
+    d.innerHTML=`<div class="corner"><span class="rank">${c.r}</span><span class="suit-small">${c.s}</span></div>`+
+      `<div class="center-suit">${c.s}</div>`+
+      `<div class="corner corner-bottom"><span class="rank">${c.r}</span><span class="suit-small">${c.s}</span></div>`;
+    el.appendChild(d);
+  }
+}
+
+function showOverlay(cls,txt){
+  const o=document.createElement('div');
+  o.className='slap-overlay '+cls;o.textContent=txt;
+  $('pile-zone').appendChild(o);
+  setTimeout(()=>o.remove(),750);
+}
+
+function log(t){
+  G.logs.unshift(t);if(G.logs.length>20)G.logs.length=20;
+  $('log').innerHTML=G.logs.slice(0,8).map(l=>'<div class="log-entry">'+l+'</div>').join('');
+}
+
+function renderRuleBadges(){
+  const el=$('active-rules');el.innerHTML='';
+  for(const r of RULES) if(G.rules[r.id]){
+    const b=document.createElement('span');b.className='rule-badge';b.textContent=r.name;el.appendChild(b);
+  }
+}
+
+// ===== DRAG TO PLAY =====
+function initDrag(){
+  const card=$('player-hand');
+
+  card.addEventListener('pointerdown',e=>{
+    if(!canPlayerPlay()) return;
+    if(card.classList.contains('empty')) return;
+    e.preventDefault();
+    drag.active=true;
+    drag.startX=e.clientX;
+    drag.startY=e.clientY;
+    card.classList.add('dragging');
+    card.setPointerCapture(e.pointerId);
+  });
+
+  card.addEventListener('pointermove',e=>{
+    if(!drag.active) return;
+    e.preventDefault();
+    const dx=e.clientX-drag.startX;
+    const dy=e.clientY-drag.startY;
+    card.style.transform=`translate(${dx}px,${dy}px) rotate(${dx*0.05}deg) scale(1.08)`;
+
+    // Check if over pile zone
+    const pr=$('pile-zone').getBoundingClientRect();
+    const over=e.clientX>=pr.left&&e.clientX<=pr.right&&e.clientY>=pr.top&&e.clientY<=pr.bottom;
+    $('pile-zone').classList.toggle('drop-ready',over);
+  });
+
+  card.addEventListener('pointerup',e=>{
+    if(!drag.active) return;
+    drag.active=false;
+    card.classList.remove('dragging');
+    $('pile-zone').classList.remove('drop-ready');
+
+    const pr=$('pile-zone').getBoundingClientRect();
+    const over=e.clientX>=pr.left&&e.clientX<=pr.right&&e.clientY>=pr.top&&e.clientY<=pr.bottom;
+
+    // Snap back first
+    card.style.transition='transform .2s ease';
+    card.style.transform='';
+    setTimeout(()=>{card.style.transition='';},200);
+
+    if(over&&canPlayerPlay()){
+      doPlay('player');
+    }
+  });
+
+  card.addEventListener('pointercancel',()=>{
+    drag.active=false;
+    card.classList.remove('dragging');
+    $('pile-zone').classList.remove('drop-ready');
+    card.style.transition='transform .2s ease';
+    card.style.transform='';
+    setTimeout(()=>{card.style.transition='';},200);
+  });
+}
+
+// ===== CLICK PILE TO SLAP =====
+function initPileClick(){
+  $('pile-zone').addEventListener('click',e=>{
+    // Ignore if drag just ended (very short distance clicks are fine)
+    if(!G.active) return;
+    // Don't trigger slap if we're in a drag
+    if(drag.active) return;
+    doSlap('player');
+  });
+}
+
+// ===== AUDIO =====
+let audioCtx=null;
+function ensureAudio(){
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') audioCtx.resume();
+}
+function playCardSound(pileSize){
+  if(!G.soundOn) return;
+  try{
+    ensureAudio();
+    const freq=220*Math.pow(2,pileSize*0.045); // rises ~¾ semitone per card
+    const osc=audioCtx.createOscillator();
+    const gain=audioCtx.createGain();
+    osc.type='triangle';
+    osc.frequency.value=Math.min(freq,2000);
+    gain.gain.setValueAtTime(0.18,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.1);
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.start();osc.stop(audioCtx.currentTime+0.1);
+  }catch(e){}
+}
+function playSlapSound(winner){
+  if(!G.soundOn) return;
+  try{
+    ensureAudio();
+    const freq=winner==='player'?520:280;
+    const osc=audioCtx.createOscillator();
+    const gain=audioCtx.createGain();
+    osc.type='square';
+    osc.frequency.value=freq;
+    gain.gain.setValueAtTime(0.12,audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.18);
+    osc.connect(gain);gain.connect(audioCtx.destination);
+    osc.start();osc.stop(audioCtx.currentTime+0.18);
+  }catch(e){}
+}
+function toggleSound(){
+  G.soundOn=!G.soundOn;
+  $('sound-btn').textContent='Sound: '+(G.soundOn?'ON':'OFF');
+}
+
+// ===== SETUP =====
+function initSetup(){
+  G.deck=shuffle(makeDeck());G.shuffleCount=1;
+  const grid=$('rule-grid');grid.innerHTML='';
+  for(const r of RULES){
+    const item=document.createElement('div');item.className='rule-item';
+    item.innerHTML=`<div class="toggle"><input type="checkbox" id="r-${r.id}" checked><span class="slider"></span></div>`+
+      `<label for="r-${r.id}"><span class="rule-name">${r.name}</span><span class="rule-desc">${r.desc}</span></label>`;
+    item.addEventListener('click',e=>{if(e.target.tagName!=='INPUT'){const cb=item.querySelector('input');cb.checked=!cb.checked;}});
+    grid.appendChild(item);
+  }
+  updShuffle();
+  $('hints-toggle').addEventListener('click',e=>{
+    if(e.target.tagName!=='INPUT'){$('r-hints').checked=!$('r-hints').checked;}
+  });
+}
+
+function doShuffle(){
+  G.deck=shuffle(G.deck);G.shuffleCount++;updShuffle();
+  $('deck-preview').classList.add('shuffling');
+  setTimeout(()=>$('deck-preview').classList.remove('shuffling'),350);
+}
+
+function updShuffle(){
+  $('shuffle-count').textContent='Shuffled '+G.shuffleCount+' time'+(G.shuffleCount>1?'s':'');
+}
+
+function resetToSetup(){
+  G.active=false;clearTimeout(G.compSlapT);clearTimeout(G.compPlayT);
+  $('pile-zone').classList.remove('slap-pulse');
+  $('game').style.display='none';$('gameover').style.display='none';$('setup').style.display='flex';
+  G.deck=shuffle(makeDeck());G.shuffleCount=1;updShuffle();
+}
+
+// ===== EVENTS =====
+$('shuffle-btn').addEventListener('click',doShuffle);
+$('start-btn').addEventListener('click',startGame);
+$('restart-btn').addEventListener('click',resetToSetup);
+$('go-btn').addEventListener('click',resetToSetup);
+$('sound-btn').addEventListener('click',toggleSound);
+
+document.addEventListener('keydown',e=>{
+  if(!G.active) return;
+  if(e.code==='Space'){e.preventDefault();doSlap('player');}
+  if(e.code==='Enter'){e.preventDefault();if(canPlayerPlay())doPlay('player');}
+});
+
+// ===== INIT =====
+initSetup();
+initDrag();
+initPileClick();
+</script>
+</body>
+</html>
