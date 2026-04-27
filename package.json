@@ -1,0 +1,8 @@
+{
+  "name": "ers",
+  "version": "1.0.0",
+  "description": "Egyptian Rat Screw - browser card game",
+  "scripts": {
+    "start": "npx serve -s . -l $PORT"
+  }
+}
